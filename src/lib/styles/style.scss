@@ -1,3 +1,130 @@
+// @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+
+// * {
+//   box-sizing: border-box;
+//   padding: 0px;
+//   margin: 0px;
+// }
+
+// :root {
+//   --react-drawing-canvas-light: #292929;
+//   --react-drawing-canvas-bg: #242424;
+//   --react-drawing-canvas-color: rgba(255, 255, 255, 0.87);
+//   --react-drawing-canvas-color-primary: #0e7490;
+//   --react-drawing-canvas-color-muted: rgba(255, 255, 255, 0.6);
+//   --react-drawing-canvas-topbar-height: 50px;
+//   --react-drawing-canvas-sidebar-left-width: 295px;
+//   --react-drawing-canvas-sidebar-right-width: 240px;
+// }
+
+// .react_drawing_canvas {
+//   font-family: "Plus Jakarta Sans", sans-serif;
+
+//   .bold {
+//     font-weight: 700;
+//   }
+
+//   .button {
+//     background-color: var(--react-drawing-canvas-color-primary);
+//     color: var(--react-drawing-canvas-color);
+//     padding: 0.5rem 1rem;
+//     border: none;
+//     border-radius: 4px;
+//     cursor: pointer;
+//     font-size: 1rem;
+//     font-weight: 700;
+//     transition: background-color 0.3s ease;
+
+//     &:hover {
+//       background-color: var(--react-drawing-canvas-color-primary);
+//       color: white;
+//       transition: all 0.5s ease;
+//     }
+//     &:active {
+//       background-color: #404040;
+//       color: white;
+//       transition: all 0.5s ease;
+//     }
+//   }
+
+//   .muted {
+//     color: var(--react-drawing-canvas-color-muted);
+//   }
+
+//   .editor {
+//     display: flex;
+//     justify-content: space-between;
+//     height: calc(100% - var(--react-drawing-canvas-topbar-height));
+//   }
+
+//   .wrapper {
+//     position: relative;
+//     line-height: 1.5;
+//     font-weight: 400;
+
+//     color-scheme: light dark;
+//     color: var(--react-drawing-canvas-color);
+//     background-color: var(--react-drawing-canvas-bg);
+
+//     font-synthesis: none;
+//     text-rendering: optimizeLegibility;
+//     -webkit-font-smoothing: antialiased;
+//     -moz-osx-font-smoothing: grayscale;
+//     height: 100vh;
+//     font-size: 0.875rem;
+
+//     .topbar {
+//       background-color: var(--react-drawing-canvas-light);
+//       display: flex;
+//       align-items: center;
+//       justify-content: space-between;
+//       padding-right: 0.92rem;
+//       border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+//       height: var(--react-drawing-canvas-topbar-height);
+//       width: 100%;
+
+//       .toolbar {
+//         display: flex;
+//         flex-direction: row;
+//         .item {
+//           cursor: pointer;
+//           padding-left: 0.82rem;
+//           padding-right: 0.82rem;
+//           &:hover {
+//             background-color: #404040;
+//           }
+//           &:active,
+//           &.active {
+//             background-color: var(--react-drawing-canvas-color-primary);
+//           }
+//         }
+//       }
+//     }
+
+//     .sidebar {
+//       background-color: var(--react-drawing-canvas-light);
+//       width: var(--react-drawing-canvas-sidebar-left-width);
+//       border-right: 1px solid rgba(255, 255, 255, 0.12);
+//       padding: 1rem;
+//       overflow-y: auto;
+
+//       &.right {
+//         border-left: 1px solid rgba(255, 255, 255, 0.12);
+//         border-right: none;
+//         width: var(--react-drawing-canvas-sidebar-right-width);
+//       }
+//     }
+
+//     .content {
+//       background-color: #1e1e1e;
+//       width: calc(
+//         100% - var(--react-drawing-canvas-sidebar-left-width) -
+//           var(--react-drawing-canvas-sidebar-right-width)
+//       );
+//     }
+//   }
+// }
+
 @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
 
 * {
@@ -7,30 +134,103 @@
 }
 
 :root {
-  --react-drawing-canvas-light: #242424;
-  --react-drawing-canvas-bg: #242424;
-  --react-drawing-canvas-color: rgba(255, 255, 255, 0.87);
-  --react-drawing-canvas-color-primary: #0e7490;
-  --react-drawing-canvas-color-muted: rgba(255, 255, 255, 0.6);
+  --react-drawing-canvas-dark-sidebar: #242424;
+  --react-drawing-canvas-dark-content: #1e1e1e;
+  --react-drawing-canvas-dark-light: #292929;
+  --react-drawing-canvas-dark-bg: #242424;
+  --react-drawing-canvas-dark-color: rgba(255, 255, 255, 0.87);
+  --react-drawing-canvas-dark-color-primary: #155e75;
+  --react-drawing-canvas-dark-color-muted: rgba(255, 255, 255, 0.6);
+  --react-drawing-canvas-dark-border: rgba(255, 255, 255, 0.12);
+
+  --react-drawing-canvas-light-sidebar: #fefefe;
+  --react-drawing-canvas-light-content: #f0f0f0;
+  --react-drawing-canvas-light-light: #f0f0f0;
+  --react-drawing-canvas-light-bg: #ffffff;
+  --react-drawing-canvas-light-color: rgba(0, 0, 0, 0.6);
+  --react-drawing-canvas-light-color-primary: #0891b2;
+  --react-drawing-canvas-light-color-muted: rgba(0, 0, 0, 0.6);
+  --react-drawing-canvas-light-border: rgba(0, 0, 0, 0.15);
+
   --react-drawing-canvas-topbar-height: 50px;
+  --react-drawing-canvas-sidebar-left-width: 295px;
+  --react-drawing-canvas-sidebar-right-width: 240px;
+}
+
+/* Define the default (dark mode) variables */
+.react_drawing_canvas {
+  --react-drawing-canvas-sidebar: var(--react-drawing-canvas-dark-sidebar);
+  --react-drawing-canvas-content: var(--react-drawing-canvas-dark-content);
+  --react-drawing-canvas-light: var(--react-drawing-canvas-dark-light);
+  --react-drawing-canvas-bg: var(--react-drawing-canvas-dark-bg);
+  --react-drawing-canvas-color: var(--react-drawing-canvas-dark-color);
+  --react-drawing-canvas-color-primary: var(
+    --react-drawing-canvas-dark-color-primary
+  );
+  --react-drawing-canvas-color-muted: var(
+    --react-drawing-canvas-dark-color-muted
+  );
+  --react-drawing-canvas-border: var(--react-drawing-canvas-dark-border);
+}
+
+/* Light mode variables */
+.react_drawing_canvas.light {
+  --react-drawing-canvas-sidebar: var(--react-drawing-canvas-light-sidebar);
+  --react-drawing-canvas-content: var(--react-drawing-canvas-light-content);
+  --react-drawing-canvas-light: var(--react-drawing-canvas-dark-light);
+  --react-drawing-canvas-bg: var(--react-drawing-canvas-light-bg);
+  --react-drawing-canvas-color: var(--react-drawing-canvas-light-color);
+  --react-drawing-canvas-color-primary: var(
+    --react-drawing-canvas-light-color-primary
+  );
+  --react-drawing-canvas-color-muted: var(
+    --react-drawing-canvas-light-color-muted
+  );
+  --react-drawing-canvas-border: var(--react-drawing-canvas-light-border);
 }
 
 .react_drawing_canvas {
   font-family: "Plus Jakarta Sans", sans-serif;
 
+  .bold {
+    font-weight: 700;
+  }
+
   .button {
     background-color: var(--react-drawing-canvas-color-primary);
-    color: var(--react-drawing-canvas-color);
-    padding: 0.5rem 1rem;
+    color: rgba(255, 255, 255, 0.87);
+    padding: 0.2rem 2rem;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.875rem;
     font-weight: 700;
     transition: background-color 0.3s ease;
 
     &:hover {
       background-color: var(--react-drawing-canvas-color-primary);
+      color: white;
+      transition: all 0.5s ease;
+    }
+    &:active {
+      background-color: #404040;
+      color: white;
+      transition: all 0.5s ease;
+    }
+
+    &.text {
+      background-color: transparent;
+      color: var(--react-drawing-canvas-color);
+      padding: 0.5rem 0.5rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: color 0.3s ease;
+
+      &:hover {
+        transition: all 0.5s ease;
+      }
     }
   }
 
@@ -61,31 +261,61 @@
     font-size: 0.875rem;
 
     .topbar {
-      background-color: var(--react-drawing-canvas-light);
+      background-color: var(--react-drawing-canvas-sidebar);
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      padding: 0.92rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      justify-content: space-between;
+      padding-right: 0.92rem;
+      border-bottom: 1px solid var(--react-drawing-canvas-border);
       height: var(--react-drawing-canvas-topbar-height);
+      width: 100%;
+
+      .toolbar {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        .item {
+          cursor: pointer;
+          padding-left: 0.82rem;
+          padding-right: 0.82rem;
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          height: 100%;
+
+          &:hover {
+            background-color: #404040;
+            color: var(--react-drawing-canvas-light-light);
+          }
+          &:active,
+          &.active {
+            background-color: var(--react-drawing-canvas-color-primary);
+            color: var(--react-drawing-canvas-light-light);
+          }
+        }
+      }
     }
 
     .sidebar {
-      background-color: var(--react-drawing-canvas-light);
-      width: 250px;
-      border-right: 1px solid rgba(255, 255, 255, 0.12);
+      background-color: var(--react-drawing-canvas-sidebar);
+      width: var(--react-drawing-canvas-sidebar-left-width);
+      border-right: 1px solid var(--react-drawing-canvas-border);
       padding: 1rem;
       overflow-y: auto;
 
       &.right {
-        border-left: 1px solid rgba(255, 255, 255, 0.12);
+        border-left: 1px solid var(--react-drawing-canvas-border);
         border-right: none;
+        width: var(--react-drawing-canvas-sidebar-right-width);
       }
     }
 
     .content {
-      background-color: #1e1e1e;
-      width: calc(100% - 500px);
+      background-color: var(--react-drawing-canvas-content);
+      width: calc(
+        100% - var(--react-drawing-canvas-sidebar-left-width) -
+          var(--react-drawing-canvas-sidebar-right-width)
+      );
     }
   }
 }
