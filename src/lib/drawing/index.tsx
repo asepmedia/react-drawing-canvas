@@ -97,8 +97,12 @@ export function Drawing(props: DrawingProps) {
       if (canvasRef?.current) {
         const canvas = canvasRef.current;
         const rect = canvas.getBoundingClientRect();
-        const x = (event.clientX - rect.left) * (canvas.width / rect.width);
-        const y = (event.clientY - rect.top) * (canvas.height / rect.height);
+        const x =
+          (event.clientX - rect.left) * (canvas.width / rect.width) -
+          panOffset.x;
+        const y =
+          (event.clientY - rect.top) * (canvas.height / rect.height) -
+          panOffset.y;
 
         if (selectedTool === POINTER_TOOL) {
           const foundIndices = paths.reduce((indices, path, index) => {
@@ -132,7 +136,7 @@ export function Drawing(props: DrawingProps) {
         }
       }
     },
-    [canvasRef, paths, selectedTool]
+    [canvasRef, paths, selectedTool, panOffset]
   );
 
   const handleMouseDown = useCallback(
@@ -140,8 +144,12 @@ export function Drawing(props: DrawingProps) {
       if (canvasRef?.current) {
         const canvas = canvasRef.current;
         const rect = canvas.getBoundingClientRect();
-        const x = (event.clientX - rect.left) * (canvas.width / rect.width);
-        const y = (event.clientY - rect.top) * (canvas.height / rect.height);
+        const x =
+          (event.clientX - rect.left) * (canvas.width / rect.width) -
+          panOffset.x;
+        const y =
+          (event.clientY - rect.top) * (canvas.height / rect.height) -
+          panOffset.y;
 
         if (selectedTool === PEN_TOOL) {
           setPaths((prevPaths) => [
@@ -165,7 +173,7 @@ export function Drawing(props: DrawingProps) {
         }
       }
     },
-    [selectedTool]
+    [selectedTool, panOffset]
   );
 
   const handleMouseMove = useCallback(
@@ -174,8 +182,12 @@ export function Drawing(props: DrawingProps) {
         if (isDrawing && selectedTool === PEN_TOOL) {
           const canvas = canvasRef.current;
           const rect = canvas.getBoundingClientRect();
-          const x = (event.clientX - rect.left) * (canvas.width / rect.width);
-          const y = (event.clientY - rect.top) * (canvas.height / rect.height);
+          const x =
+            (event.clientX - rect.left) * (canvas.width / rect.width) -
+            panOffset.x;
+          const y =
+            (event.clientY - rect.top) * (canvas.height / rect.height) -
+            panOffset.y;
 
           setPaths((prevPaths) => {
             const newPaths = [...prevPaths];
@@ -196,14 +208,18 @@ export function Drawing(props: DrawingProps) {
         } else if (isSelecting && selectedTool === POINTER_TOOL) {
           const canvas = canvasRef.current;
           const rect = canvas.getBoundingClientRect();
-          const x = (event.clientX - rect.left) * (canvas.width / rect.width);
-          const y = (event.clientY - rect.top) * (canvas.height / rect.height);
+          const x =
+            (event.clientX - rect.left) * (canvas.width / rect.width) -
+            panOffset.x;
+          const y =
+            (event.clientY - rect.top) * (canvas.height / rect.height) -
+            panOffset.y;
 
           setSelectionEnd({ x, y });
         }
       }
     },
-    [isDrawing, selectedTool, panStart, isPanning, isSelecting]
+    [isDrawing, selectedTool, panStart, isPanning, isSelecting, panOffset]
   );
 
   const handleMouseUp = useCallback(() => {
@@ -292,7 +308,6 @@ export function Drawing(props: DrawingProps) {
               c.lineTo(point.x, point.y);
             });
             c.stroke();
-            console.log("sds", selectedPathIndices);
             if (selectedPathIndices.includes(index)) {
               c.strokeStyle = "#3b82f6";
               c.setLineDash([6, 6]);
@@ -332,6 +347,19 @@ export function Drawing(props: DrawingProps) {
     selectionStart,
     selectionEnd,
   ]);
+
+  const exportToPNG = () => {
+    if (canvasRef.current) {
+      const canvas = canvasRef.current;
+      const dataUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = "drawing.png";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -449,7 +477,9 @@ export function Drawing(props: DrawingProps) {
             >
               <RdcRightSidebar width={20} />
             </button>
-            <button className="button">Save</button>
+            <button className="button" onClick={exportToPNG}>
+              Save
+            </button>
           </div>
         </div>
         <div className="editor">
