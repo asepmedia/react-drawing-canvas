@@ -30,8 +30,13 @@ const tools: {
   },
 ];
 
-function Toolbar() {
-  const [selectedTool, setSelectedTool] = useState(POINTER_TOOL);
+function Toolbar({
+  selectedTool,
+  setSelectedTool,
+}: {
+  selectedTool: number;
+  setSelectedTool: (tool: number) => void;
+}) {
   return (
     <>
       {tools.map((tool) => (
@@ -65,15 +70,25 @@ interface Path {
   };
 }
 
+interface LinePath extends Path {
+  points: { x: number; y: number }[];
+}
+
 export function Drawing(props: DrawingProps) {
   const { mode = "dark" } = props;
   const [isDarkMode, setIsDarkMode] = useState(mode === "dark");
   const [showLeftSidebar, setShowLeftSidebar] = useState(true);
   const [showRightSidebar, setShowRightSidebar] = useState(true);
   const [paths, setPaths] = useState<Path[]>([]);
-  const [selectedPathIndex, setSelectedPathIndex] = useState<number | null>(
-    null
-  );
+  const [selectedPathIndices, setSelectedPathIndices] = useState<number[]>([]);
+  const [selectedTool, setSelectedTool] = useState(POINTER_TOOL);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [selectionStart, setSelectionStart] = useState({ x: 0, y: 0 });
+  const [selectionEnd, setSelectionEnd] = useState({ x: 0, y: 0 });
+  const [isSelecting, setIsSelecting] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -85,41 +100,164 @@ export function Drawing(props: DrawingProps) {
         const x = (event.clientX - rect.left) * (canvas.width / rect.width);
         const y = (event.clientY - rect.top) * (canvas.height / rect.height);
 
-        const foundIndex = paths.findIndex((path) => {
-          if (path.type === "rect") {
-            return (
-              x >= path.x &&
-              x <= path.x + (path.meta.width || 0) &&
-              y >= path.y &&
-              y <= path.y + (path.meta.height || 0)
-            );
-          }
-          return false;
-        });
+        if (selectedTool === POINTER_TOOL) {
+          const foundIndices = paths.reduce((indices, path, index) => {
+            if (path.type === "rect") {
+              if (
+                x >= path.x &&
+                x <= path.x + (path.meta.width || 0) &&
+                y >= path.y &&
+                y <= path.y + (path.meta.height || 0)
+              ) {
+                indices.push(index);
+              }
+            } else if (path.type === "line") {
+              const linePath = path as LinePath;
+              for (let i = 0; i < linePath.points.length - 1; i++) {
+                const p1 = linePath.points[i];
+                const p2 = linePath.points[i + 1];
+                const d = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+                const d1 = Math.hypot(p2.x - x, p2.y - y);
+                const d2 = Math.hypot(p1.x - x, p1.y - y);
+                if (d1 + d2 >= d - 1 && d1 + d2 <= d + 1) {
+                  indices.push(index);
+                  break;
+                }
+              }
+            }
+            return indices;
+          }, [] as number[]);
 
-        if (foundIndex !== -1) {
-          setSelectedPathIndex(foundIndex);
-        } else {
-          setSelectedPathIndex(null);
+          setSelectedPathIndices(foundIndices);
         }
       }
     },
-    [canvasRef, paths]
+    [canvasRef, paths, selectedTool]
   );
 
-  const ctx = useCallback(() => {
-    const canvas = canvasRef.current;
-    const ctxx = canvas?.getContext("2d");
-    if (ctxx) {
-      return ctxx;
+  const handleMouseDown = useCallback(
+    (event: MouseEvent) => {
+      if (canvasRef?.current) {
+        const canvas = canvasRef.current;
+        const rect = canvas.getBoundingClientRect();
+        const x = (event.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (event.clientY - rect.top) * (canvas.height / rect.height);
+
+        if (selectedTool === PEN_TOOL) {
+          setPaths((prevPaths) => [
+            ...prevPaths,
+            {
+              x,
+              y,
+              type: "line",
+              meta: { color: "#eaeaea" },
+              points: [{ x, y }],
+            } as LinePath,
+          ]);
+          setIsDrawing(true);
+        } else if (selectedTool === HAND_TOOL) {
+          setIsPanning(true);
+          setPanStart({ x: event.clientX, y: event.clientY });
+        } else if (selectedTool === POINTER_TOOL) {
+          setSelectionStart({ x, y });
+          setSelectionEnd({ x, y });
+          setIsSelecting(true);
+        }
+      }
+    },
+    [selectedTool]
+  );
+
+  const handleMouseMove = useCallback(
+    (event: MouseEvent) => {
+      if (canvasRef?.current) {
+        if (isDrawing && selectedTool === PEN_TOOL) {
+          const canvas = canvasRef.current;
+          const rect = canvas.getBoundingClientRect();
+          const x = (event.clientX - rect.left) * (canvas.width / rect.width);
+          const y = (event.clientY - rect.top) * (canvas.height / rect.height);
+
+          setPaths((prevPaths) => {
+            const newPaths = [...prevPaths];
+            const currentPath = newPaths[newPaths.length - 1] as LinePath;
+            currentPath.points.push({ x, y });
+            return newPaths;
+          });
+        } else if (isPanning && selectedTool === HAND_TOOL) {
+          const dx = event.clientX - panStart.x;
+          const dy = event.clientY - panStart.y;
+
+          setPanOffset((prevOffset) => ({
+            x: prevOffset.x + dx,
+            y: prevOffset.y + dy,
+          }));
+
+          setPanStart({ x: event.clientX, y: event.clientY });
+        } else if (isSelecting && selectedTool === POINTER_TOOL) {
+          const canvas = canvasRef.current;
+          const rect = canvas.getBoundingClientRect();
+          const x = (event.clientX - rect.left) * (canvas.width / rect.width);
+          const y = (event.clientY - rect.top) * (canvas.height / rect.height);
+
+          setSelectionEnd({ x, y });
+        }
+      }
+    },
+    [isDrawing, selectedTool, panStart, isPanning, isSelecting]
+  );
+
+  const handleMouseUp = useCallback(() => {
+    if (isDrawing) {
+      setIsDrawing(false);
+    } else if (isPanning) {
+      setIsPanning(false);
+    } else if (isSelecting) {
+      setIsSelecting(false);
+      const selectionRect = {
+        x1: Math.min(selectionStart.x, selectionEnd.x),
+        y1: Math.min(selectionStart.y, selectionEnd.y),
+        x2: Math.max(selectionStart.x, selectionEnd.x),
+        y2: Math.max(selectionStart.y, selectionEnd.y),
+      };
+
+      const foundIndices = paths.reduce((indices, path, index) => {
+        if (path.type === "rect") {
+          const withinSelection =
+            path.x >= selectionRect.x1 &&
+            path.x + (path.meta.width || 0) <= selectionRect.x2 &&
+            path.y >= selectionRect.y1 &&
+            path.y + (path.meta.height || 0) <= selectionRect.y2;
+          if (withinSelection) {
+            indices.push(index);
+          }
+        } else if (path.type === "line") {
+          const linePath = path as LinePath;
+          const withinSelection = linePath.points.some(
+            (point) =>
+              point.x >= selectionRect.x1 &&
+              point.x <= selectionRect.x2 &&
+              point.y >= selectionRect.y1 &&
+              point.y <= selectionRect.y2
+          );
+          if (withinSelection) {
+            indices.push(index);
+          }
+        }
+        return indices;
+      }, [] as number[]);
+
+      console.log(foundIndices);
+      setSelectedPathIndices(foundIndices);
     }
-    return null;
-  }, [canvasRef]);
+  }, [isDrawing, isPanning, isSelecting, selectionStart, selectionEnd, paths]);
 
   const draw = useCallback(() => {
-    const c = ctx();
+    const canvas = canvasRef.current;
+    const c = canvas?.getContext("2d");
     if (c) {
-      c.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height);
+      c.clearRect(0, 0, canvas.width, canvas.height);
+      c.save();
+      c.translate(panOffset.x, panOffset.y); // Apply the panning offset
 
       paths.forEach((path, index) => {
         switch (path.type) {
@@ -131,46 +269,122 @@ export function Drawing(props: DrawingProps) {
               path.meta.width || 0,
               path.meta.height || 0
             );
-            if (index === selectedPathIndex) {
+            if (selectedPathIndices.includes(index)) {
               c.strokeStyle = "#3b82f6";
               c.setLineDash([6, 6]);
               c.lineWidth = 2;
               c.strokeRect(
-                path.x,
-                path.y,
-                path.meta.width || 0,
-                path.meta.height || 0
+                path.x - 2,
+                path.y - 2,
+                (path.meta.width || 0) + 4,
+                (path.meta.height || 0) + 4
               );
+            }
+            break;
+          case "line":
+            const linePath = path as LinePath;
+            c.strokeStyle = path.meta.color || "black";
+            c.lineWidth = 2;
+            c.setLineDash([]);
+            c.beginPath();
+            c.moveTo(linePath.points[0].x, linePath.points[0].y);
+            linePath.points.forEach((point) => {
+              c.lineTo(point.x, point.y);
+            });
+            c.stroke();
+            console.log("sds", selectedPathIndices);
+            if (selectedPathIndices.includes(index)) {
+              c.strokeStyle = "#3b82f6";
+              c.setLineDash([6, 6]);
+              c.lineWidth = 2;
+              c.beginPath();
+              c.moveTo(linePath.points[0].x, linePath.points[0].y);
+              linePath.points.forEach((point) => {
+                c.lineTo(point.x, point.y);
+              });
+              c.stroke();
             }
             break;
           default:
             break;
         }
       });
-    }
-  }, [paths, selectedPathIndex, ctx]);
 
-  useEffect(() => {
-    if (canvasRef.current) {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = canvas.offsetWidth * dpr;
-        canvas.height = canvas.offsetHeight * dpr;
-        ctx.scale(dpr, dpr);
+      if (isSelecting) {
+        c.strokeStyle = "rgba(59, 130, 246, 0.5)";
+        c.setLineDash([4, 4]);
+        c.lineWidth = 1;
+        c.strokeRect(
+          selectionStart.x,
+          selectionStart.y,
+          selectionEnd.x - selectionStart.x,
+          selectionEnd.y - selectionStart.y
+        );
       }
 
+      c.restore(); // Restore the context to prevent the offset from affecting other operations
+    }
+  }, [
+    paths,
+    selectedPathIndices,
+    panOffset,
+    isSelecting,
+    selectionStart,
+    selectionEnd,
+  ]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          const dpr = window.devicePixelRatio || 1;
+          canvas.width = canvas.offsetWidth * dpr;
+          canvas.height = canvas.offsetHeight * dpr;
+          ctx.scale(dpr, dpr);
+          draw(); // Redraw canvas on resize
+        }
+      }
+    };
+
+    handleResize(); // Initialize canvas size
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [draw]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
       canvas.addEventListener("click", handleClick);
+      canvas.addEventListener("mousedown", handleMouseDown);
+      canvas.addEventListener("mousemove", handleMouseMove);
+      canvas.addEventListener("mouseup", handleMouseUp);
       return () => {
         canvas.removeEventListener("click", handleClick);
+        canvas.removeEventListener("mousedown", handleMouseDown);
+        canvas.removeEventListener("mousemove", handleMouseMove);
+        canvas.removeEventListener("mouseup", handleMouseUp);
       };
     }
-  }, [handleClick]);
+  }, [handleClick, handleMouseDown, handleMouseMove, handleMouseUp]);
 
   useEffect(() => {
     draw();
-  }, [paths, draw]);
+
+    return () => {
+      if (canvasRef.current) {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+    };
+  }, [paths, selectedPathIndices, draw, panOffset]);
 
   return (
     <div
@@ -187,23 +401,11 @@ export function Drawing(props: DrawingProps) {
               width: "30%",
               height: "100%",
             }}
-            onClick={() => {
-              setPaths((prev) => [
-                ...prev,
-                {
-                  x: Math.floor(Math.random() * 1000),
-                  y: Math.floor(Math.random() * 1000),
-                  type: "rect",
-                  meta: {
-                    color: "#155e75",
-                    width: 200,
-                    height: 200,
-                  },
-                },
-              ]);
-            }}
           >
-            <Toolbar />
+            <Toolbar
+              selectedTool={selectedTool}
+              setSelectedTool={setSelectedTool}
+            />
           </div>
           <div>
             <span className="muted"> Drafts</span> /{" "}
@@ -267,7 +469,12 @@ export function Drawing(props: DrawingProps) {
                 border: "1px solid #aaa",
                 width: "100%",
                 height: "100%",
-                cursor: selectedPathIndex !== null ? "move" : "default",
+                cursor:
+                  selectedTool === HAND_TOOL
+                    ? "grab"
+                    : selectedPathIndices.length > 0
+                    ? "move"
+                    : "default",
               }}
             ></canvas>
           </div>
