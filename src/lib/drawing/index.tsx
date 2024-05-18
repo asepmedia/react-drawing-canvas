@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import RdcDarkMode from "../icons/RdcDarkMode";
-import Rdchand from "../icons/RdcHand";
+import RdcHand from "../icons/RdcHand";
 import RdcImage from "../icons/RdcImage";
 import RdcLeftSidebar from "../icons/RdcLeftSidebar";
 import RdcLightMode from "../icons/RdcLightMode";
@@ -33,7 +33,7 @@ const tools: {
   },
   {
     name: HAND_TOOL,
-    icon: <Rdchand width={20} />,
+    icon: <RdcHand width={20} />,
   },
 ];
 
@@ -133,6 +133,7 @@ export function Drawing(props: DrawingProps) {
   const [selectionStart, setSelectionStart] = useState({ x: 0, y: 0 });
   const [selectionEnd, setSelectionEnd] = useState({ x: 0, y: 0 });
   const [isSelecting, setIsSelecting] = useState(false);
+  const [zoom, setZoom] = useState(1);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const historyRef = useRef<Path[][]>([]);
@@ -161,17 +162,22 @@ export function Drawing(props: DrawingProps) {
     };
   };
 
+  const getMousePos = (event: MouseEvent, canvas: HTMLCanvasElement) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    return {
+      x: (event.clientX - rect.left) * scaleX - panOffset.x,
+      y: (event.clientY - rect.top) * scaleY - panOffset.y,
+    };
+  };
+
   const handleClick = useCallback(
     (event: MouseEvent) => {
       if (canvasRef?.current) {
         const canvas = canvasRef.current;
-        const rect = canvas.getBoundingClientRect();
-        const x =
-          (event.clientX - rect.left) * (canvas.width / rect.width) -
-          panOffset.x;
-        const y =
-          (event.clientY - rect.top) * (canvas.height / rect.height) -
-          panOffset.y;
+        const { x, y } = getMousePos(event, canvas);
 
         if (selectedTool === POINTER_TOOL) {
           const foundIndices = paths
@@ -215,13 +221,7 @@ export function Drawing(props: DrawingProps) {
     (event: MouseEvent) => {
       if (canvasRef?.current) {
         const canvas = canvasRef.current;
-        const rect = canvas.getBoundingClientRect();
-        const x =
-          (event.clientX - rect.left) * (canvas.width / rect.width) -
-          panOffset.x;
-        const y =
-          (event.clientY - rect.top) * (canvas.height / rect.height) -
-          panOffset.y;
+        const { x, y } = getMousePos(event, canvas);
 
         if (selectedTool === PEN_TOOL) {
           setPaths((prevPaths) => {
@@ -294,16 +294,10 @@ export function Drawing(props: DrawingProps) {
   const handleMouseMove = useCallback(
     (event: MouseEvent) => {
       if (canvasRef?.current) {
-        if (isDrawing && selectedTool === PEN_TOOL) {
-          const canvas = canvasRef.current;
-          const rect = canvas.getBoundingClientRect();
-          const x =
-            (event.clientX - rect.left) * (canvas.width / rect.width) -
-            panOffset.x;
-          const y =
-            (event.clientY - rect.top) * (canvas.height / rect.height) -
-            panOffset.y;
+        const canvas = canvasRef.current;
+        const { x, y } = getMousePos(event, canvas);
 
+        if (isDrawing && selectedTool === PEN_TOOL) {
           setPaths((prevPaths) => {
             const newPaths = [...prevPaths];
             const currentPath = newPaths[newPaths.length - 1] as LinePath;
@@ -321,15 +315,6 @@ export function Drawing(props: DrawingProps) {
 
           setPanStart({ x: event.clientX, y: event.clientY });
         } else if (isMoving && selectedTool === POINTER_TOOL) {
-          const canvas = canvasRef.current;
-          const rect = canvas.getBoundingClientRect();
-          const x =
-            (event.clientX - rect.left) * (canvas.width / rect.width) -
-            panOffset.x;
-          const y =
-            (event.clientY - rect.top) * (canvas.height / rect.height) -
-            panOffset.y;
-
           const dx = x - moveStart.current.x;
           const dy = y - moveStart.current.y;
 
@@ -351,15 +336,6 @@ export function Drawing(props: DrawingProps) {
             })
           );
         } else if (isSelecting && selectedTool === POINTER_TOOL) {
-          const canvas = canvasRef.current;
-          const rect = canvas.getBoundingClientRect();
-          const x =
-            (event.clientX - rect.left) * (canvas.width / rect.width) -
-            panOffset.x;
-          const y =
-            (event.clientY - rect.top) * (canvas.height / rect.height) -
-            panOffset.y;
-
           setSelectionEnd({ x, y });
         }
       }
@@ -371,7 +347,6 @@ export function Drawing(props: DrawingProps) {
       isPanning,
       isMoving,
       isSelecting,
-      panOffset,
       selectedPathIndices,
     ]
   );
@@ -436,7 +411,8 @@ export function Drawing(props: DrawingProps) {
     if (c) {
       c.clearRect(0, 0, canvas.width, canvas.height);
       c.save();
-      c.translate(panOffset.x, panOffset.y); // Apply the panning offset
+      c.translate(panOffset.x, panOffset.y);
+      c.scale(zoom, zoom); // Apply the zoom factor
 
       paths
         .slice()
@@ -574,6 +550,7 @@ export function Drawing(props: DrawingProps) {
     isSelecting,
     selectionStart,
     selectionEnd,
+    zoom,
   ]);
 
   const exportToPNG = () => {
@@ -643,7 +620,9 @@ export function Drawing(props: DrawingProps) {
       if (canvas) {
         const ctx = canvas.getContext("2d");
         if (ctx) {
-          const dpr = window.devicePixelRatio || 1;
+          // const dpr = window.devicePixelRatio || 1;
+          const dpr = 1;
+
           canvas.width = canvas.offsetWidth * dpr;
           canvas.height = canvas.offsetHeight * dpr;
           ctx.scale(dpr, dpr);
@@ -689,6 +668,35 @@ export function Drawing(props: DrawingProps) {
       }
     };
   }, [paths, selectedPathIndices, draw, panOffset]);
+
+  // Zoom functionality
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const handleWheel = (event: WheelEvent) => {
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault();
+          const { offsetX, offsetY } = event;
+          const zoomFactor = event.deltaY < 0 ? 1.1 : 0.9;
+          const newZoom = zoom * zoomFactor;
+
+          // Adjust the pan offset to center the zoom around the mouse pointer
+          const mouseX = (offsetX - panOffset.x) / zoom;
+          const mouseY = (offsetY - panOffset.y) / zoom;
+          const newPanX = offsetX - mouseX * newZoom;
+          const newPanY = offsetY - mouseY * newZoom;
+
+          setZoom(newZoom);
+          setPanOffset({ x: newPanX, y: newPanY });
+        }
+      };
+
+      canvas.addEventListener("wheel", handleWheel);
+      return () => {
+        canvas.removeEventListener("wheel", handleWheel);
+      };
+    }
+  }, [zoom, panOffset]);
 
   const handleDragStart = (
     event: React.DragEvent<HTMLDivElement>,
