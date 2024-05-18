@@ -142,6 +142,7 @@
   --react-drawing-canvas-dark-color-primary: #155e75;
   --react-drawing-canvas-dark-color-muted: rgba(255, 255, 255, 0.6);
   --react-drawing-canvas-dark-border: rgba(255, 255, 255, 0.12);
+  --react-drawing-canvas-dark-active: rgba(255, 255, 255, 0.87);
 
   --react-drawing-canvas-light-sidebar: #fefefe;
   --react-drawing-canvas-light-content: #f0f0f0;
@@ -151,6 +152,7 @@
   --react-drawing-canvas-light-color-primary: #0891b2;
   --react-drawing-canvas-light-color-muted: rgba(0, 0, 0, 0.6);
   --react-drawing-canvas-light-border: rgba(0, 0, 0, 0.15);
+  --react-drawing-canvas-light-active: #0891b2;
 
   --react-drawing-canvas-topbar-height: 50px;
   --react-drawing-canvas-sidebar-left-width: 295px;
@@ -171,6 +173,7 @@
     --react-drawing-canvas-dark-color-muted
   );
   --react-drawing-canvas-border: var(--react-drawing-canvas-dark-border);
+  --react-drawing-canvas-active: var(--react-drawing-canvas-dark-active);
 }
 
 /* Light mode variables */
@@ -187,6 +190,7 @@
     --react-drawing-canvas-light-color-muted
   );
   --react-drawing-canvas-border: var(--react-drawing-canvas-light-border);
+  --react-drawing-canvas-active: var(--react-drawing-canvas-light-active);
 }
 
 .react_drawing_canvas {
@@ -194,6 +198,18 @@
 
   .bold {
     font-weight: 700;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  .primary {
+    color: var(--react-drawing-canvas-color-primary);
+  }
+
+  .active {
+    color: var(--react-drawing-canvas-active);
   }
 
   .button {
@@ -302,20 +318,23 @@
       border-right: 1px solid var(--react-drawing-canvas-border);
       padding: 1rem;
       overflow-y: auto;
+      position: absolute;
+      height: calc(100% - var(--react-drawing-canvas-topbar-height));
 
       &.right {
         border-left: 1px solid var(--react-drawing-canvas-border);
         border-right: none;
         width: var(--react-drawing-canvas-sidebar-right-width);
+        right: 0 !important;
       }
     }
 
     .content {
       background-color: var(--react-drawing-canvas-content);
-      width: calc(
-        100% - var(--react-drawing-canvas-sidebar-left-width) -
-          var(--react-drawing-canvas-sidebar-right-width)
-      );
+      // width: calc(
+      //   100% - var(--react-drawing-canvas-sidebar-left-width) -
+      //     var(--react-drawing-canvas-sidebar-right-width)
+      // );
     }
   }
 }
