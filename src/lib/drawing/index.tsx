@@ -89,9 +89,12 @@ interface DrawingProps {
   mode?: "light" | "dark";
 }
 
-interface Path {
+interface Point {
   x: number;
   y: number;
+}
+
+interface Path extends Point {
   zIndex: number;
   type: "rect" | "circle" | "line" | "text" | "image";
   name: string;
@@ -804,12 +807,57 @@ const Drawing: React.FC<DrawingProps> = ({ mode = "dark" }) => {
     event.preventDefault();
   };
 
-  const handleNameChange = (index: number, newName: string) => {
-    setPaths((prevPaths) => {
-      const newPaths = [...prevPaths];
-      newPaths[index].name = newName;
-      return newPaths;
-    });
+  const line = (pointA: Point, pointB: Point) => {
+    const lengthX = pointB.x - pointA.x;
+    const lengthY = pointB.y - pointA.y;
+    return {
+      length: Math.sqrt(Math.pow(lengthX, 2) + Math.pow(lengthY, 2)),
+      angle: Math.atan2(lengthY, lengthX),
+    };
+  };
+
+  const controlPoint = (
+    current: any,
+    previous: any,
+    next: any,
+    reverse?: any
+  ) => {
+    // When 'current' is the first or last point of the array
+    // 'previous' or 'next' don't exist.
+    // Replace with 'current'
+    const p = previous || current;
+    const n = next || current;
+
+    // Properties of the opposed-line
+    const o = line(p, n);
+
+    // If is end-control-point, add PI to the angle to go backward
+    const angle = o.angle + (reverse ? Math.PI : 0);
+    const length = o.length * 0.2;
+
+    // The control point position is relative to the current point
+    const x = current[0] + Math.cos(angle) * length;
+    const y = current[1] + Math.sin(angle) * length;
+    return [x, y];
+  };
+
+  const bezierCommand = (point: Point, i: number, a: any) => {
+    // start control point
+    const cps = controlPoint(a[i - 1], a[i - 2], point);
+
+    // end control point
+    const cpe = controlPoint(point, a[i - 1], a[i + 1], true);
+    return `C ${cps[0]},${cps[1]} ${cpe[0]},${cpe[1]} ${point.x},${point.y}`;
+  };
+
+  const svgPath = (points: Point[], command: any) => {
+    // build the d attributes by looping over the points
+    const d = points.reduce(
+      (acc, point, i, a) =>
+        i === 0 ? `M ${point.x},${point.y}` : `${acc} ${command(point, i, a)}`,
+      ""
+    );
+    return `<path d="${d}" fill="none" stroke="grey" />`;
   };
 
   return (
