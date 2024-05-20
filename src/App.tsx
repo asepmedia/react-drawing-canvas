@@ -1,9 +1,21 @@
-import { ReactDrawingCanvas } from "./lib";
+// import { ReactDrawingCanvas } from "./lib";
+
+// function App() {
+//   return (
+//     <>
+//       <ReactDrawingCanvas />
+//     </>
+//   );
+// }
+
+// export default App;
+
+import DrawingTool from "./DrawingTool";
 
 function App() {
   return (
     <>
-      <ReactDrawingCanvas />
+      <DrawingTool />
     </>
   );
 }

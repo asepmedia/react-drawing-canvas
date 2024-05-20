@@ -38,9 +38,15 @@ interface ToolbarProps {
   selectedTool: number;
   setSelectedTool: (tool: number) => void;
   onAddImage?: (base64: string) => void;
+  onExportSvg?: () => void;
 }
 
-function Toolbar({ selectedTool, setSelectedTool, onAddImage }: ToolbarProps) {
+function Toolbar({
+  selectedTool,
+  setSelectedTool,
+  onAddImage,
+  onExportSvg,
+}: ToolbarProps) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,6 +87,7 @@ function Toolbar({ selectedTool, setSelectedTool, onAddImage }: ToolbarProps) {
           {tool.icon}
         </div>
       ))}
+      <button onClick={onExportSvg}>Export Selected to SVG</button>
     </>
   );
 }
@@ -254,7 +261,7 @@ const Drawing: React.FC<DrawingProps> = ({ mode = "dark" }) => {
                 zIndex: prevPaths.length,
                 type: "line",
                 name: `Line ${prevPaths.length + 1}`,
-                meta: { color: "#eaeaea", width: 10 },
+                meta: { color: "#eaeaea", width: 1 },
                 points: [{ x, y }],
               } as LinePath,
             ];
@@ -537,13 +544,13 @@ const Drawing: React.FC<DrawingProps> = ({ mode = "dark" }) => {
                   ...linePath.points.map((point) => point.y)
                 );
                 c.strokeStyle = "#3b82f6";
-                c.setLineDash([6, 6]);
+                // c.setLineDash([6, 6]);
                 c.lineWidth = 2;
                 c.strokeRect(
-                  minX - 2,
-                  minY - 2,
-                  maxX - minX + 4,
-                  maxY - minY + 4
+                  minX - 9,
+                  minY - 9,
+                  maxX - minX + 16,
+                  maxY - minY + 16
                 );
               }
               break;
@@ -602,7 +609,7 @@ const Drawing: React.FC<DrawingProps> = ({ mode = "dark" }) => {
                 );
                 if (selectedPathIndices.includes(index)) {
                   c.strokeStyle = "#3b82f6";
-                  c.setLineDash([6, 6]);
+                  // c.setLineDash([6, 6]);
                   c.lineWidth = 2;
                   c.strokeRect(
                     imgPath.x - 2,
@@ -629,6 +636,10 @@ const Drawing: React.FC<DrawingProps> = ({ mode = "dark" }) => {
           selectionEnd.y - selectionStart.y
         );
       }
+      c.globalCompositeOperation = "destination-over";
+
+      c.fillStyle = "#1e1e1e";
+      c.fillRect(0, 0, canvas.width, canvas.height);
 
       c.restore();
     }
@@ -653,6 +664,76 @@ const Drawing: React.FC<DrawingProps> = ({ mode = "dark" }) => {
       link.click();
       document.body.removeChild(link);
     }
+  };
+
+  const convertToSvgFromPath = () => {
+    if (selectedPathIndices.length === 0) return;
+
+    const selectedPaths = selectedPathIndices.map((index) => paths[index]);
+
+    let minX = Math.min(...selectedPaths.map((path) => path.x));
+    let minY = Math.min(...selectedPaths.map((path) => path.y));
+    let maxX = Math.max(
+      ...selectedPaths.map((path) =>
+        path.type === "line"
+          ? Math.max(...(path as LinePath).points.map((p) => p.x))
+          : path.x + (path.meta.width || 0)
+      )
+    );
+    let maxY = Math.max(
+      ...selectedPaths.map((path) =>
+        path.type === "line"
+          ? Math.max(...(path as LinePath).points.map((p) => p.y))
+          : path.y + (path.meta.height || 0)
+      )
+    );
+
+    let width = maxX - minX;
+    let height = maxY - minY;
+
+    if (selectedPaths.length === 1) {
+      const singlePath = selectedPaths[0];
+      width = singlePath.meta.width || width;
+      height = singlePath.meta.height || height;
+    }
+
+    const svgPaths = selectedPaths
+      .map((path) => {
+        switch (path.type) {
+          case "rect":
+            return `<rect x="${path.x - minX}" y="${path.y - minY}" width="${
+              path.meta.width
+            }" height="${path.meta.height}" fill="${path.meta.color}" />`;
+          case "circle":
+            const radius = (path.meta.width || 10) / 2;
+            return `<circle cx="${path.x - minX}" cy="${
+              path.y - minY
+            }" r="${radius}" fill="${path.meta.color}" />`;
+          case "line":
+            const linePath = path as LinePath;
+            const points = linePath.points
+              .map((point) => `${point.x - minX},${point.y - minY}`)
+              .join(" ");
+            return `<polyline points="${points}" fill="none" stroke="${path.meta.color}" stroke-width="${path.meta.width}" />`;
+          case "image":
+            return `<image href="${path.src}" x="${path.x - minX}" y="${
+              path.y - minY
+            }" width="${path.meta.width}" height="${path.meta.height}" />`;
+          default:
+            return "";
+        }
+      })
+      .join("");
+
+    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${svgPaths}</svg>`;
+    const blob = new Blob([svgContent], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "selected_drawing.svg";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleUndo = useCallback(() => {
@@ -873,6 +954,7 @@ const Drawing: React.FC<DrawingProps> = ({ mode = "dark" }) => {
               selectedTool={selectedTool}
               setSelectedTool={setSelectedTool}
               onAddImage={handleAddImage}
+              onExportSvg={convertToSvgFromPath}
             />
           </div>
           <div>
@@ -998,9 +1080,93 @@ const Drawing: React.FC<DrawingProps> = ({ mode = "dark" }) => {
               }}
             ></canvas>
           </div>
-          <div
-            className={cn("right sidebar", { hidden: !showRightSidebar })}
-          ></div>
+          <div className={cn("right sidebar", { hidden: !showRightSidebar })}>
+            <div
+              className="position"
+              style={{
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: "5px",
+                }}
+              >
+                <div
+                  style={{
+                    width: "50%",
+                  }}
+                >
+                  x
+                  <input
+                    type="number"
+                    style={{
+                      width: "100%",
+                    }}
+                    onChange={(e: any) => {
+                      setPanOffset((prevOffset) => ({
+                        x: parseInt(e?.target?.value),
+                        y: prevOffset.y,
+                      }));
+                    }}
+                    value={panOffset?.x}
+                  />
+                </div>
+                <div
+                  style={{
+                    width: "50%",
+                  }}
+                >
+                  y
+                  <input
+                    type="number"
+                    style={{
+                      width: "100%",
+                    }}
+                    onChange={(e: any) => {
+                      setPanOffset((prevOffset) => ({
+                        y: parseInt(e?.target?.value),
+                        x: prevOffset.x,
+                      }));
+                    }}
+                    value={panOffset?.y}
+                  />
+                </div>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: "5px",
+                }}
+              >
+                <div
+                  style={{
+                    width: "50%",
+                  }}
+                >
+                  <input
+                    type="color"
+                    style={{
+                      width: "100%",
+                    }}
+                    onChange={(e: any) => {}}
+                  />
+                </div>
+                <div
+                  style={{
+                    width: "50%",
+                  }}
+                >
+                  sds
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
